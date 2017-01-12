@@ -13,8 +13,8 @@ module.exports = function(context, req) {
 
     // get the request information
     context.log(req.headers);
-    var playerId = req.headers["playerId"];
-    var opponentId = req.headers["opponentId"];
+    var playerId = req.headers["player"];
+    var opponentId = req.headers["opponent"];
     var group = req.headers["group"];
     if (playerId != null && group != null) {
 
