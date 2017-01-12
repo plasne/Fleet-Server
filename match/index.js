@@ -2,7 +2,9 @@
 const redis = require("redis");
 const uuid = require("node-uuid");
 
-module.exports = function(context, req) {
+const verbose = true;
+
+module.exports = function(context) {
 
     // connect to redis
     var redis_key = process.env["RedisKey"];
@@ -12,10 +14,9 @@ module.exports = function(context, req) {
     });
 
     // get the request information
-    context.log(req.headers);
-    var playerId = req.headers["player"];
-    var opponentId = req.headers["opponent"];
-    var group = req.headers["group"];
+    var playerId = context.req.headers["player"];
+    var opponentId = context.req.headers["opponent"];
+    var group = context.req.headers["group"];
     if (playerId != null && group != null) {
 
         // see if the player has been paired
@@ -24,6 +25,7 @@ module.exports = function(context, req) {
                 if (gameInfo != null) {
 
                     // the player was previously matched, just return the status
+                    if (verbose) context.log("the player was previously matched, returning gameInfo.");
                     context.res = {
                         status: 200,
                         body: json.parse(gameInfo)
@@ -38,6 +40,7 @@ module.exports = function(context, req) {
 
                             // examine the lobby
                             if (playerId != playerInLobbyId) {
+                                if (verbose) context.log("the player is matched; storing for opponent, returning gameInfo.");
 
                                 // remove the player from the lobby
                                 client.del("lobby:" + group, function(err) {
@@ -54,6 +57,8 @@ module.exports = function(context, req) {
                                     opponentId: playerId
                                 }), function(err) {
                                     if (!err) {
+
+                                        // return the game info to the requesting player
                                         context.res = {
                                             status: 200,
                                             body: {
@@ -62,6 +67,7 @@ module.exports = function(context, req) {
                                                 opponentId: playerInLobbyId
                                             }
                                         }
+
                                     } else {
                                         context.log("cannot add a game entry for a player.");
                                         context.res = {
@@ -71,13 +77,15 @@ module.exports = function(context, req) {
                                     }
                                 });
 
-                                // return the game info
-
                             } else {
+
+                                // there were no players to match with, so the user is just stored in the lobby
+                                if (verbose) context.log("the player is waiting in the lobby.")
                                 context.res = {
                                     status: 200,
                                     body: { status: "waiting" }
                                 }
+
                             }
 
                         } else {
