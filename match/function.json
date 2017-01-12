@@ -3,8 +3,8 @@
     {
       "name": "req",
       "type": "httpTrigger",
-      "webHookType": "",
-      "direction": "in"
+      "direction": "in",
+      "methods": [ "POST" ]
     },
     {
       "name": "res",

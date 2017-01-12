@@ -12,6 +12,7 @@ module.exports = function(context, req) {
     });
 
     // get the request information
+    context.log(req.headers);
     var playerId = req.headers["playerId"];
     var opponentId = req.headers["opponentId"];
     var group = req.headers["group"];
