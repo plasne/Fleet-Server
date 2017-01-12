@@ -30,7 +30,12 @@ module.exports = function(context) {
                         status: 200,
                         body: json.parse(gameInfo)
                     }
-                    client.del("player:" + playerId);
+                    client.del("player:" + playerId, function(err) {
+                        if (err) {
+                            context.log("could not delete player");
+                        }
+                        context.done();
+                    });
 
                 } else {
 
@@ -44,47 +49,58 @@ module.exports = function(context) {
 
                                 // remove the player from the lobby
                                 client.del("lobby:" + group, function(err) {
-                                    if (err) {
-                                        context.log("cannot remove player from lobby");
-                                    }
-                                });
-
-                                // store a game entry for the player
-                                var gameId = uuid.v4();
-                                client.set("player:" + playerInLobbyId, JSON.stringify({
-                                    status: "matched",
-                                    gameId: gameId,
-                                    opponentId: playerId
-                                }), function(err) {
                                     if (!err) {
 
-                                        // return the game info to the requesting player
-                                        context.res = {
-                                            status: 200,
-                                            body: {
-                                                status: "matched",
-                                                gameId: gameId,
-                                                opponentId: playerInLobbyId
+                                        // store a game entry for the player
+                                        var gameId = uuid.v4();
+                                        client.set("player:" + playerInLobbyId, JSON.stringify({
+                                            status: "matched",
+                                            gameId: gameId,
+                                            opponentId: playerId
+                                        }), function(err) {
+                                            if (!err) {
+
+                                                // return the game info to the requesting player
+                                                context.res = {
+                                                    status: 200,
+                                                    body: {
+                                                        status: "matched",
+                                                        gameId: gameId,
+                                                        opponentId: playerInLobbyId
+                                                    }
+                                                }
+                                                context.done();
+
+                                            } else {
+                                                context.log("cannot add a game entry for a player.");
+                                                context.res = {
+                                                    status: 500,
+                                                    body: "cannot_store_game_entry"
+                                                }
+                                                context.done();
                                             }
-                                        }
+                                            
+                                        });
 
                                     } else {
-                                        context.log("cannot add a game entry for a player.");
+                                        context.log("cannot remove player from lobby");
                                         context.res = {
                                             status: 500,
-                                            body: "cannot_store_game_entry"
+                                            body: "cannot_remove_player"
                                         }
+                                        context.done();
                                     }
                                 });
 
                             } else {
 
-                                // there were no players to match with, so the user is just stored in the lobby
-                                if (verbose) context.log("the player is waiting in the lobby.")
+                                // the player was already waiting
+                                if (verbose) context.log("the player is already waiting in the lobby.");
                                 context.res = {
                                     status: 200,
                                     body: { status: "waiting" }
                                 }
+                                context.done();
 
                             }
 
@@ -92,12 +108,20 @@ module.exports = function(context) {
 
                             // there is no one in the lobby, so put this player there
                             client.set("lobby:" + group, playerId, function(err) {
-                                if (err) {
+                                if (!err) {
+                                    if (verbose) context.log("the player was queued in the lobby.");
+                                    context.res = {
+                                        status: 200,
+                                        body: { status: "waiting" }
+                                    }
+                                    context.done();
+                                } else {
                                     context.log("cannot put a player in the lobby");
                                     context.res = {
                                         status: 500,
                                         body: "cannot_put_in_lobby"
                                     }
+                                    context.done();
                                 }
                             });
 
@@ -111,6 +135,7 @@ module.exports = function(context) {
                     status: 500,
                     body: "cannot_query_players"
                 }
+                context.done();
             }
         });
 
@@ -120,7 +145,7 @@ module.exports = function(context) {
             status: 500,
             body: "invalid_parameters"
         }
+        context.done();
     }
 
-    context.done();
 }
