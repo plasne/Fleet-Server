@@ -2,7 +2,7 @@
 const redis = require("redis");
 const uuid = require("node-uuid");
 
-const verbose = true;
+const verbose = false;
 
 module.exports = function(context) {
 
@@ -28,7 +28,7 @@ module.exports = function(context) {
                     if (verbose) context.log("the player was previously matched, returning gameInfo.");
                     context.res = {
                         status: 200,
-                        body: json.parse(gameInfo)
+                        body: JSON.parse(gameInfo)
                     }
                     client.del("player:" + playerId, function(err) {
                         if (err) {
