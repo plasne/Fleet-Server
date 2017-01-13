@@ -155,7 +155,7 @@ module.exports = function(context) {
 
                             // there is no one in the lobby, so put this player there
                             if (verbose) context.log("put into the lobby: " + playerId);
-                            client.multi().set("lobby:" + group, playerId).expire("lobby:" + group, 60 * 10, function(err) {
+                            client.multi().set("lobby:" + group, playerId).expire("lobby:" + group, 60 * 10).exec(function(err) {
                                 if (!err) {
 
                                     // queue the player in the lobby
