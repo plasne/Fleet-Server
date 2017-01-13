@@ -52,54 +52,47 @@ module.exports = function(context) {
                         status: 200,
                         body: JSON.parse(gameInfo)
                     }
+
+                    // delete the player gameInfo match data
                     client.del("player:" + playerId, function(err) {
-                        if (err) {
-                            context.log("could not delete player");
-                        }
+                        if (err) context.log("could not delete player");
                         context.done();
                     });
 
                 } else if (opponentId != null) {
 
-                    // store a game entry for the specified player
+                    // store a game entry for the specified player (and set expiry)
                     if (verbose) context.log("a match is created since an opponent was specified.");
                     var gameId = uuid.v4();
-                    client.set("player:" + opponentId, JSON.stringify({
+                    client.multi().set("player:" + opponentId, JSON.stringify({
                         status: "matched",
                         gameId: gameId,
                         opponentId: playerId
-                    }), function(err) {
+                    })).expire("player:" + opponentId, 60 * 10).exec(function(err) {
                         if (!err) {
 
-                            // set the expiry for 10 min
-                            client.expire("player:" + opponentId, 60 * 10, function(err) {
-                                if (err) context.log("player:" + opponentId + " expiry could not be set.");
-
-                                // return that this player is waiting on the other
-                                context.res = {
-                                    status: 200,
-                                    body: {
-                                        status: "matched",
-                                        gameId: gameId,
-                                        opponentId: opponentId
-                                    }
+                            // return that this player is waiting on the other
+                            context.res = {
+                                status: 200,
+                                body: {
+                                    status: "matched",
+                                    gameId: gameId,
+                                    opponentId: opponentId
                                 }
-                                context.done();
-
-                            });
+                            }
+                            context.done();
 
                         } else {
 
                             // ERROR: cannot add a game entry for the player
-                            context.log("cannot add a game entry for a player.");
+                            context.log("cannot create game match.1");
                             context.res = {
                                 status: 500,
-                                body: "cannot_store_game_entry"
+                                body: "cannot_create_match.1"
                             }
                             context.done();
 
                         }
-                        
                     });
 
                 } else if (group != null) {
@@ -112,57 +105,33 @@ module.exports = function(context) {
                             if (playerId != playerInLobbyId) {
                                 if (verbose) context.log("the player is matched; storing for opponent, returning gameInfo.");
 
-                                // remove the player from the lobby
-                                client.del("lobby:" + group, function(err) {
+                                // remove the player from the lobby, add the gameInfo, expiry (10 min)
+                                var gameId = uuid.v4();
+                                client.multi().del("lobby:" + group).set("player:" + playerInLobbyId, JSON.stringify({
+                                    status: "matched",
+                                    gameId: gameId,
+                                    opponentId: playerId
+                                })).expire("player:" + playerInLobbyId, 60 * 10).exec(function(err) {
                                     if (!err) {
 
-                                        // store a game entry for the player
-                                        var gameId = uuid.v4();
-                                        client.set("player:" + playerInLobbyId, JSON.stringify({
-                                            status: "matched",
-                                            gameId: gameId,
-                                            opponentId: playerId
-                                        }), function(err) {
-                                            if (!err) {
-
-                                                // set the expiry for 10 min
-                                                client.expire("player:" + playerInLobbyId, 60 * 10, function(err) {
-                                                    if (err) context.log("player:" + playerInLobbyId + " expiry could not be set.");
-
-                                                    // return the game info to the requesting player
-                                                    context.res = {
-                                                        status: 200,
-                                                        body: {
-                                                            status: "matched",
-                                                            gameId: gameId,
-                                                            opponentId: playerInLobbyId
-                                                        }
-                                                    }
-                                                    context.done();
-
-                                                });
-
-                                            } else {
-
-                                                // ERROR: cannot add a game entry for the player
-                                                context.log("cannot add a game entry for a player.");
-                                                context.res = {
-                                                    status: 500,
-                                                    body: "cannot_store_game_entry"
-                                                }
-                                                context.done();
-
+                                        // return the game info to the requesting player
+                                        context.res = {
+                                            status: 200,
+                                            body: {
+                                                status: "matched",
+                                                gameId: gameId,
+                                                opponentId: playerInLobbyId
                                             }
-                                            
-                                        });
+                                        }
+                                        context.done();
 
                                     } else {
 
                                         // ERROR: cannot remove the player from the lobby
-                                        context.log("cannot remove player from lobby");
+                                        context.log("cannot create game match.2");
                                         context.res = {
                                             status: 500,
-                                            body: "cannot_remove_player"
+                                            body: "cannot_create_match.2"
                                         }
                                         context.done();
 
@@ -184,22 +153,16 @@ module.exports = function(context) {
                         } else {
 
                             // there is no one in the lobby, so put this player there
-                            client.set("lobby:" + group, playerId, function(err) {
+                            client.multi().set("lobby:" + group, playerId).expire("lobby:" + group, 60 * 10, function(err) {
                                 if (!err) {
 
-                                    // set the expiry to 10 min
-                                    client.expire("lobby:" + group, 60 * 10, function(err) {
-                                        if (err) context.log("lobby:" + group + " expiry could not be set.");
-
-                                        // queue the player in the lobby
-                                        if (verbose) context.log("the player was queued in the lobby.");
-                                        context.res = {
-                                            status: 200,
-                                            body: { status: "enqueued" }
-                                        }
-                                        context.done();
-
-                                    });
+                                    // queue the player in the lobby
+                                    if (verbose) context.log("the player was queued in the lobby.");
+                                    context.res = {
+                                        status: 200,
+                                        body: { status: "enqueued" }
+                                    }
+                                    context.done();
 
                                 } else {
 
@@ -210,7 +173,7 @@ module.exports = function(context) {
                                         body: "cannot_put_in_lobby"
                                     }
                                     context.done();
-                                    
+
                                 }
                             });
 

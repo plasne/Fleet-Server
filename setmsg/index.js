@@ -25,31 +25,32 @@ module.exports = function(context) {
     // get the request information
     var gameId = context.req.headers["game"];
     var playerId = context.req.headers["player"];
-    if (gameId != null && playerId != null) {
+    var messages = JSON.parse(context.req.body);
+    if (gameId != null && playerId != null && Array.isArray(messages) && messages.length > 0) {
 
-        // pop the top 20 messages
-        client.multi().lrange(gameId + ":" + playerId, 0, 19, function(err, messages) {
+        // push the messages
+        var multi = client.multi();
+        for (var i = 0; i < messages.length; i++) {
+            multi.rpush(gameId + ":" + playerId, messages[i]);
+        }
+        multi.exec(function(err) {
             if (!err) {
                 context.res = {
-                    status: 200,
-                    body: messages
-                }
-                context.done();
-            }
-        }).ltrim(gameId + ":" + playerId, 20, 999).exec(function(err) {
-            if (err) {
-                context.res = {
                     status: 500,
-                    body: "failed_to_read_messages"
+                    body: "cannot_push_messages"
                 }
-                context.done();
+            } else {
+                context.res = {
+                    status: 200
+                }
             }
+            context.done();
         });
 
     } else {
 
         // ERROR: invalid parameters
-        context.log("game or player was null so the request was ignored.");
+        context.log("game, player, messages was null so the request was ignored.");
         context.res = {
             status: 500,
             body: "invalid_parameters"
