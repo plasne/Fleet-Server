@@ -32,7 +32,9 @@ module.exports = function(context) {
             if (!err) {
                 context.res = {
                     status: 200,
-                    body: messages
+                    body: {
+                        messages: messages
+                    }
                 }
                 context.done();
             }
