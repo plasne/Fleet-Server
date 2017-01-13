@@ -25,9 +25,7 @@ module.exports = function(context) {
     // get the request information
     var gameId = context.req.headers["game"];
     var playerId = context.req.headers["player"];
-    //var messages = JSON.parse(context.req.body);
-    var messages = context.req.body;
-    context.log(messages);
+    var messages = JSON.parse(context.req.body);
     if (gameId != null && playerId != null && Array.isArray(messages) && messages.length > 0) {
 
         // push the messages
