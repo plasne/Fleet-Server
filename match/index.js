@@ -59,6 +59,10 @@ module.exports = function(context) {
             }
         });
 
+        // pass back success regardless
+        context.res = { status: 200 };
+        context.done();
+
     } else if (playerId != null) {
 
         // see if the player has been paired
