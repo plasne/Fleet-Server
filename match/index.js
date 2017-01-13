@@ -42,6 +42,7 @@ module.exports = function(context) {
     } else if (playerId != null) {
 
         // see if the player has been paired
+        if (verbose) context.log("checking to see if the player has been paired: " + playerId);
         client.get("player:" + playerId, function(err, gameInfo) {
             if (!err) {
                 if (gameInfo != null) {
@@ -153,6 +154,7 @@ module.exports = function(context) {
                         } else {
 
                             // there is no one in the lobby, so put this player there
+                            if (verbose) context.log("put into the lobby: " + playerId);
                             client.multi().set("lobby:" + group, playerId).expire("lobby:" + group, 60 * 10, function(err) {
                                 if (!err) {
 
