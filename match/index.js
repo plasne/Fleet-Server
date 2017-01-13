@@ -29,6 +29,7 @@ module.exports = function(context) {
     var playerId = context.req.headers["player"];
     var opponentId = context.req.headers["opponent"];
     var group = context.req.headers["group"];
+    var cmd = context.req.headers["cmd"];
     if (playerId != null && opponentId != null && playerId == opponentId) {
 
         // ERROR: invalid opponent
@@ -38,6 +39,25 @@ module.exports = function(context) {
             body: "invalid_opponent"
         }
         context.done();
+
+    } else if (playerId != null && cmd != null && cmd == "cancel" && group != null) {
+
+        // see if the player was in the lobby
+        client.get("lobby:" + group, function(err, playerInLobbyId) {
+            if (!err) {
+
+                // delete from lobby and from player gameInfo
+                var multi = client.multi();
+                if (playerInLobbyId == playerId) multi.del("lobby:" + group);
+                multi.del("player:" + playerId);
+                multi.exec(function(err) {
+                    if (err) context.log("could not cancel player.1: " + err);
+                });
+
+            } else {
+                context.log("could not cancel player.2: " + err);
+            }
+        });
 
     } else if (playerId != null) {
 
