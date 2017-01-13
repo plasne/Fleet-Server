@@ -10,10 +10,10 @@ module.exports = function(context) {
         tls: { servername: "pelasne-fleet.redis.cache.windows.net" },
         retry_strategy: function(options) {
             if (options.error && options.error.code === "ECONNREFUSED") {
-                return new Error("The server refused the connection");
+                return new Error("The server refused the connection.");
             }
             if (options.total_retry_time > 1000 * 60 * 1) { // 1 min
-                return new Error("Retry time exhausted");
+                return new Error("Retry time exhausted.");
             }
             if (options.times_connected > 10) {
                 return undefined;
