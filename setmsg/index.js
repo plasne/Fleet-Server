@@ -35,6 +35,7 @@ module.exports = function(context) {
         }
         multi.exec(function(err) {
             if (!err) {
+                context.log("cannot push messages: " + err);
                 context.res = {
                     status: 500,
                     body: "cannot_push_messages"

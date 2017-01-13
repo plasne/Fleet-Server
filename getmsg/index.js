@@ -38,6 +38,7 @@ module.exports = function(context) {
             }
         }).ltrim(gameId + ":" + playerId, 20, 999).exec(function(err) {
             if (err) {
+                context.log("cannot read messages: " + err);
                 context.res = {
                     status: 500,
                     body: "failed_to_read_messages"

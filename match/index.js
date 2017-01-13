@@ -55,7 +55,7 @@ module.exports = function(context) {
 
                     // delete the player gameInfo match data
                     client.del("player:" + playerId, function(err) {
-                        if (err) context.log("could not delete player");
+                        if (err) context.log("could not delete player: " + err);
                         context.done();
                     });
 
@@ -85,7 +85,7 @@ module.exports = function(context) {
                         } else {
 
                             // ERROR: cannot add a game entry for the player
-                            context.log("cannot create game match.1");
+                            context.log("cannot create game match.1: " + err);
                             context.res = {
                                 status: 500,
                                 body: "cannot_create_match.1"
@@ -128,7 +128,7 @@ module.exports = function(context) {
                                     } else {
 
                                         // ERROR: cannot remove the player from the lobby
-                                        context.log("cannot create game match.2");
+                                        context.log("cannot create game match.2: " + err);
                                         context.res = {
                                             status: 500,
                                             body: "cannot_create_match.2"
@@ -167,7 +167,7 @@ module.exports = function(context) {
                                 } else {
 
                                     // ERROR: player cannot be put in the lobby
-                                    context.log("cannot put a player in the lobby");
+                                    context.log("cannot put a player in the lobby: " + err);
                                     context.res = {
                                         status: 500,
                                         body: "cannot_put_in_lobby"
@@ -193,7 +193,7 @@ module.exports = function(context) {
             } else {
 
                 // ERROR: cannot query for the player to see if he has been matched already
-                context.log("could not query for the player.");
+                context.log("could not query for the player: " + err);
                 context.res = {
                     status: 500,
                     body: "cannot_query_player"
